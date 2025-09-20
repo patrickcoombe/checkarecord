@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# ONLY WORKS IF domains.txt EXISTS IN THE FILE WHERE THIS SCRIPT LIVES
+# IT WILL PRINT RESULTS TO CONSOLE BUT I ALSO MODIFIED IT SO IT SAVES TO FILE SINCE SOME OF MY LISTS ARE LARGE AND NEED LATER PARSING
+
+# ==============================================================================
+# Script: dns_checker.sh
+# Description: This script reads a list of domains from 'domains.txt',
+#              performs a DNS A record and NS record lookup for each,
+#              and prints the results in a formatted way.
+#              The output is also saved to a file with a timestamp.
+# ==============================================================================
+
+# Define the input file name
+DOMAINS_FILE="domains.txt"
+
+# Check if the domains.txt file exists
+if [ ! -f "$DOMAINS_FILE" ]; then
+    echo "Error: The file '$DOMAINS_FILE' was not found."
+    echo "Please create a file named 'domains.txt' and list one domain per line."
+    exit 1
+fi
+
+# Create a timestamped output file name
+OUTPUT_FILE="dns_results_$(date +%Y-%m-%d_%H%M).txt"
+echo "Results will be saved to: $OUTPUT_FILE"
+echo ""
+
+# Loop through each domain in the input file
+while read -r domain; do
+    # Skip empty lines or lines starting with '#'
+    if [[ -z "$domain" || "$domain" =~ ^#.* ]]; then
+        continue
+    fi
+
+    # Print to console and redirect to file
+    echo "==================================================" | tee -a "$OUTPUT_FILE"
+    echo "Domain: $domain" | tee -a "$OUTPUT_FILE"
+    echo "--------------------------------------------------" | tee -a "$OUTPUT_FILE"
+    
+    # Query A record
+    echo "A Record:" | tee -a "$OUTPUT_FILE"
+    dig A "$domain" +short | tee -a "$OUTPUT_FILE"
+    
+    # Add a separator
+    echo "" | tee -a "$OUTPUT_FILE"
+
+    # Query Nameserver record
+    echo "Nameservers:" | tee -a "$OUTPUT_FILE"
+    dig NS "$domain" +short | tee -a "$OUTPUT_FILE"
+    
+    # Add a separator
+    echo "" | tee -a "$OUTPUT_FILE"
+    
+done < "$DOMAINS_FILE"
+
+echo "==================================================" | tee -a "$OUTPUT_FILE"
+echo "DNS check complete. Results saved to $OUTPUT_FILE."
